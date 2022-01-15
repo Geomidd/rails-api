@@ -13,4 +13,9 @@ RSpec.describe '/articles routes' do
     id = '1'
     expect(get "articles/#{id}").to route_to('articles#show', id: id)
   end
+
+  it "should route to articles#create" do
+    expect(post "/articles").to route_to("articles#create")
+  end
+  
 end
