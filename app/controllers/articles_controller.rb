@@ -13,7 +13,7 @@ class ArticlesController < ApplicationController
   end
 
   def create
-    article = Article.new(article_params)
+    article = current_user.articles.build(article_params)
     article.save!
     render json: serializer.new(article), status: :created
   end
