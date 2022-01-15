@@ -19,9 +19,15 @@ class ArticlesController < ApplicationController
   end
 
   def update
-    article = Article.find(params[:id])
+    article = current_user.articles.find(params[:id])
     article.update!(article_params)
     render json: serializer.new(article), status: :ok
+  end
+
+  def destroy
+    article = current_user.articles.find(params[:id])
+    article.destroy
+    head :no_content
   end
 
   def serializer
