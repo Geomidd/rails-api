@@ -1,12 +1,16 @@
 class ApplicationController < ActionController::API
   include JsonapiErrorsHandler
+  AuthorizationError = Class.new(StandardError)
+
   ErrorMapper.map_errors!({
     'ActiveRecord::RecordNotFound' => 'JsonapiErrorsHandler::Errors::NotFound',
-    'UserAuthenticator::AuthenticationError' => 'JsonapiErrorsHandler::Errors::Unauthorized',
     "ActiveRecord::RecordInvalid" => "JsonapiErrorsHandler::Errors::Invalid",
+    "ApplicationController::AuthorizationError" => "JsonapiErrorsHandler::Errors::Forbidden",
   })
   rescue_from ::StandardError, with: lambda { |e| handle_error(e) }
   rescue_from ActiveRecord::RecordInvalid, with: lambda { |e| handle_validation_error(e) }
+  rescue_from UserAuthenticator::Standard::AuthenticationError, with: lambda { authentication_standard_error }
+  rescue_from UserAuthenticator::Oauth::AuthenticationError, with: lambda { authentication_oauth_error }
 
   before_action :authorize!
 
@@ -36,5 +40,25 @@ class ApplicationController < ActionController::API
       }
     end
     render json: { errors: errors }, status: 422
+  end
+
+  def authentication_oauth_error
+    error = {
+      :status => 401,
+      :source => { :pointer => "code" },
+      :title => "Authentication code is invalid",
+      :detail => "You must provide valid code in order to exchange it for token."
+    }
+    render json: { :errors => [error] }, status: 401
+  end
+
+  def authentication_standard_error
+    error = {
+      :status => 401,
+      :source => { :pointer => "/data/attributes/password" },
+      :title => "Invalid login or password",
+      :detail => "You must provide valid credentials in order to exchange them for token."
+    }
+    render json: { :errors => [error] }, status: 401
   end
 end
